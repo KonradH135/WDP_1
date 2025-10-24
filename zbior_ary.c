@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "zbior_ary.h"
 
 int Q;
@@ -47,8 +48,9 @@ zbior_ary create_empty_set(int len_1,int len_2){//tworzy zbior_ary z tablicami d
     return Tem;
 }
 
-zbior_ary free_unused_memory(zbior_ary *Result){
+zbior_ary free_unused_memory(zbior_ary *Result){//tu byly poprawki
     zbior_ary Tem;
+    int finger_Tem = 0;
     Tem.len = 0;
     for(int i = 0;i < (*Result).len ; ++i){
         if( (*Result).modulo_q[i] != -1){
@@ -58,10 +60,13 @@ zbior_ary free_unused_memory(zbior_ary *Result){
     Tem.modulo_q = (int *)malloc( (long unsigned int)Tem.len * sizeof(int));
     Tem.first_ele = (int *)malloc( (long unsigned int)Tem.len * sizeof(int));
     Tem.second_ele = (int *)malloc( (long unsigned int)Tem.len * sizeof(int));
-    for(int i = 0; i < Tem.len; ++i){
-        Tem.modulo_q[i] = (*Result).modulo_q[i];
-        Tem.first_ele[i] = (*Result).first_ele[i];
-        Tem.second_ele[i] = (*Result).second_ele[i];
+    for(int i = 0; i < (*Result).len; ++i){
+        if((*Result).modulo_q[i] != -1){
+            Tem.modulo_q[finger_Tem] = (*Result).modulo_q[i];
+            Tem.first_ele[finger_Tem] = (*Result).first_ele[i];
+            Tem.second_ele[finger_Tem] = (*Result).second_ele[i];
+            ++finger_Tem;
+        }
     }
     free((*Result).modulo_q);free((*Result).first_ele);free((*Result).second_ele);
 
@@ -191,7 +196,63 @@ zbior_ary suma(zbior_ary A,zbior_ary B){
     if(finger_B < B.len){
         copy_ele(&Result,B,finger_B,B.len-1,&indeks_res);//copy the rest of elements in B
     }
-    //tutaj bedzie mialo miejsce przepisanie (preferencyjnie w funkcji)
+    zbior_ary Thin_Result = free_unused_memory(&Result);
+    return Thin_Result;
+}
+
+
+zbior_ary roznica(zbior_ary A,zbior_ary B){
+    zbior_ary Result = create_empty_set(A.len,B.len);
+    int finger_A = 0,finger_B = 0,last_to_copy,indeks_res = 0,down_limit = INT_MIN;//ustawic down_limit
+    int a_1,a_2,b_1,b_2;//para liczb [a_1,a_2] reprezentuje przedzial zawierajacy liczby całkowite należące do ciągu arytmetycznego o różnicy Q, zachodzi a_1 <= a_2
+
+    while( (finger_A < A.len) && (finger_B < B.len) ){
+        if(A.modulo_q[finger_A] == B.modulo_q[finger_B]){
+            interval(A,&a_1,&a_2,finger_A);//wczytanie odpowiednich przedzialów
+            interval(B,&b_1,&b_2,finger_B);
+
+            if( a_2 <= b_2 ){
+                if( a_1 < b_1 ){
+                    Result.modulo_q[indeks_res] = A.modulo_q[finger_A];
+                    Result.first_ele[indeks_res] = maximum(down_limit,a_1);//uzupelnic
+                    Result.second_ele[indeks_res] = a_2;
+                    ++indeks_res;
+                }
+                ++finger_A;
+            }
+            else{
+                if( a_1 < b_1){
+                    Result.modulo_q[indeks_res] = A.modulo_q[finger_A];
+                    Result.first_ele[indeks_res] = maximum(down_limit,a_1);//uzupelnic
+                    Result.second_ele[indeks_res] = b_1 - Q;
+                    ++indeks_res;
+                }
+                down_limit = b_2 + Q;
+                ++finger_B;
+            }
+        }
+        else{
+            down_limit = INT_MIN;
+            if(A.modulo_q[finger_A] < B.modulo_q[finger_B]){
+                last_to_copy = last_ele_with_modulo(A,finger_A);
+                copy_ele(&Result,A,finger_A,last_to_copy,&indeks_res);
+                finger_A = last_to_copy + 1;
+            }
+            else{
+                ++finger_B;
+            }
+        }
+    }
+    if(finger_A < A.len){
+        for(int i = finger_A; i < A.len; ++i){
+            if(down_limit < A.second_ele[i]){
+                Result.modulo_q[indeks_res] = A.modulo_q[i];
+                Result.first_ele[indeks_res] = maximum(A.first_ele[i],down_limit);
+                Result.second_ele[indeks_res] = A.second_ele[i];
+            }
+        }
+    }
+    
     zbior_ary Thin_Result = free_unused_memory(&Result);
     return Thin_Result;
 }
