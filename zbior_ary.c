@@ -203,7 +203,7 @@ zbior_ary suma(zbior_ary A,zbior_ary B){
 
 zbior_ary roznica(zbior_ary A,zbior_ary B){
     zbior_ary Result = create_empty_set(A.len,B.len);
-    int finger_A = 0,finger_B = 0,last_to_copy,indeks_res = 0,down_limit = INT_MIN;//ustawic down_limit
+    int finger_A = 0,finger_B = 0,last_to_copy,indeks_res = 0,down_limit = INT_MIN;
     int a_1,a_2,b_1,b_2;//para liczb [a_1,a_2] reprezentuje przedzial zawierajacy liczby całkowite należące do ciągu arytmetycznego o różnicy Q, zachodzi a_1 <= a_2
 
     while( (finger_A < A.len) && (finger_B < B.len) ){
@@ -255,4 +255,92 @@ zbior_ary roznica(zbior_ary A,zbior_ary B){
     
     zbior_ary Thin_Result = free_unused_memory(&Result);
     return Thin_Result;
+}
+
+zbior_ary iloczyn(zbior_ary A,zbior_ary B){
+    zbior_ary Result = create_empty_set(A.len,B.len);
+
+    int finger_A = 0,finger_B = 0,indeks_res = 0;
+    int a_1,a_2,b_1,b_2;//para liczb [a_1,a_2] reprezentuje przedzial zawierajacy liczby całkowite należące do ciągu arytmetycznego o różnicy Q, zachodzi a_1 <= a_2
+
+    while( (finger_A < A.len) && (finger_B < B.len) ){
+        if(A.modulo_q[finger_A] == B.modulo_q[finger_B]){
+            interval(A,&a_1,&a_2,finger_A);//wczytanie odpowiednich przedzialów
+            interval(B,&b_1,&b_2,finger_B);
+
+            if(a_2 <= b_2){
+                if(b_1 <= a_2){
+                    Result.modulo_q[indeks_res] = A.modulo_q[finger_A];
+                    Result.first_ele[indeks_res] = maximum(a_1,b_1);//uzupelnic
+                    Result.second_ele[indeks_res] = a_2;
+                    ++indeks_res;
+                }
+                ++finger_A;
+            }
+            else{
+                if(a_1 <= b_2){
+                    Result.modulo_q[indeks_res] = A.modulo_q[finger_A];
+                    Result.first_ele[indeks_res] = maximum(a_1,b_1);//uzupelnic
+                    Result.second_ele[indeks_res] = b_2;
+                    ++indeks_res;
+                }
+                ++finger_B;
+            }
+        }
+        else{
+            if(A.modulo_q[finger_A] < B.modulo_q[finger_B]){
+                ++finger_A;
+            }
+            else{
+                ++finger_B;
+            }
+        }
+    }
+    zbior_ary Thin_Result = free_unused_memory(&Result);
+    return Thin_Result;
+}
+
+
+unsigned ary(zbior_ary A){
+    return (unsigned)A.len;
+}
+
+unsigned moc(zbior_ary A){
+    unsigned res = 0,tem;
+    for(int i=0;i<A.len;++i){
+        tem = (unsigned)((A.second_ele[i]-A.first_ele[i])/Q + 1);
+        res+=tem;
+    }
+    return res;
+}
+
+bool nalezy(zbior_ary A, int b){
+    int q=positive_modulo(b,Q);
+    int p=0,k=A.len-1,mid;
+    while(p<k){
+        mid=(p+k+1)/2;
+        if(A.modulo_q[mid] < q){//too small q
+            p = mid + 1;
+        }
+        else{
+            if(A.modulo_q[mid] > q){//too big q
+                k = mid - 1;
+            }
+            else{//right q
+                //we are searching the highest (i): A.first_ele[i] <= b
+                if(A.first_ele[mid] > b){
+                    k = mid - 1;
+                }
+                else{
+                    p = mid;
+                }
+            }
+        }
+    }
+    if(p == k){
+        if( (A.modulo_q[p] == q) && (A.first_ele[p] <= b) && (A.second_ele[p] >= b) ){
+            return true;
+        }
+    }
+    return false;
 }
