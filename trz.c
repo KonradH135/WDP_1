@@ -44,6 +44,10 @@ void declare_memory( int n, struct pair* X ){
     (*X).first = (int*)malloc((unsigned)n*sizeof(int*));
     (*X).second = (int*)malloc((unsigned)n*sizeof(int*));
 
+    if( !((*X).first) || !((*X).second) ){
+        printf("Allocation Failed");
+        exit(0);
+    }
 }
 
 void answer( int a, int b ){
@@ -55,13 +59,18 @@ void answer( int a, int b ){
 void read_data( int* n, int** network, int** distance, int** network_back, int** distance_back ){
 
     if( scanf( "%d", n ) != 1 ){
-        fprintf(stderr,"ERROR");exit(1);
+        fprintf(stderr,"ERROR");exit(0);
     }
 
     (*network)=(int*)malloc((unsigned)(*n)*sizeof(int*));
     (*distance)=(int*)malloc((unsigned)(*n)*sizeof(int*));
     (*network_back)=(int*)malloc((unsigned)(*n)*sizeof(int*));
     (*distance_back)=(int*)malloc((unsigned)(*n)*sizeof(int*));
+
+    if( !(*network) || !(*distance) || !(*network_back) || !(*distance_back) ){
+        printf("Allocation Failed");
+        exit(0);
+    }
 
     for( int i = 0 ; i < *n ; ++i ){
 
@@ -71,7 +80,7 @@ void read_data( int* n, int** network, int** distance, int** network_back, int**
 
     }
 
-    for( int i = 0 ; i < *n ; ++i ){
+    for( int i = 0 ; i < *n ; ++i ){// calculation of reversed tables
         
         (*network_back)[i] = (*network)[*n-1-i];
         (*distance_back)[i] = (*distance)[*n-1-i];
@@ -79,7 +88,7 @@ void read_data( int* n, int** network, int** distance, int** network_back, int**
     }
 }
 
-bool solution_exists( int n, int* network ){
+bool solution_exists( int n, int* network ){// cheaks if 3 different network are present
 
     int x, y, z;
     x = y = z = -1;
@@ -101,6 +110,9 @@ bool solution_exists( int n, int* network ){
 }
 
 void reverse_table( int n, int** table ){
+    // not only does it reverse the table
+    // but elements are indexes in the table
+    // so they also need to be reversed
 
     int tem, index = 0;
 
@@ -115,7 +127,7 @@ void reverse_table( int n, int** table ){
     }
 }
 
-void add_possibility_min( struct trio* net, struct trio* index, int motel_network, int motel_index ){//funkcja zachowuje monotoniczność
+void add_possibility_min( struct trio* net, struct trio* index, int motel_network, int motel_index ){
 
     if( (*net).first != motel_network && (*net).second != motel_network && (*net).third != motel_network ){
 
@@ -180,30 +192,30 @@ void update_table( struct trio net, struct trio index, struct pair* table, int m
     }
 }
 
-void caterpillar_min( int n, int* network, int* distance, struct pair* closest ){//mozna odwrocic tablice distance i network i znalesc closest_right
+void caterpillar_min( int n, int* network, int* distance, struct pair* closest ){
 
-    int i=0, j=1;//head and tail of a caterpillar_min
+    int i=0, j=1;// tail and head of a caterpillar_min
 
-    struct trio net;//our candidates
-    struct trio index;//distances of our candidates
+    struct trio net;// our candidates
+    struct trio index;// distances of our candidates
 
-    //we want distance[index.first] R distance[index.second] R distance[index.third], R = (>=)
+    // we want distance[index.first] R distance[index.second] R distance[index.third], R = (>=) lub (<=)
 
     net.second = net.third = -1;
     index.second = index.third = -1;
     net.first = network[0];
     index.first = 0;
 
-    while( j < n ){//gasieniczka
+    while( j < n ){// caterpillar
 
-        if( distance[j] == distance[j-1] || i == j ){//add some statement for tail
+        if( distance[j] == distance[j-1] || i == j ){// add some statement for tail
             
             add_possibility_min( &net, &index, network[j], j );
 
             ++j;
 
         }
-        else{//distance[j] > distance[j-1], tail needs to 
+        else{// distance[j] > distance[j-1], tail have to get to the head
             
             update_table( net, index, closest, network[i], i );
 
@@ -221,21 +233,21 @@ void calculate_minimum( int n, int* network, int *distance, struct pair closest_
 
     for( int i = 0 ; i < n ; ++i ){
         
-        if( closest_left.first[i] != -1 && closest_right.first[n-1-i] != -1 ){
+        if( closest_left.first[i] != -1 && closest_right.first[i] != -1 ){
 
-            if( network[closest_left.first[i]] != network[n-1-closest_right.first[n-1-i]] ){
+            if( network[closest_left.first[i]] != network[closest_right.first[i]] ){
 
-                (*RES_MIN) = min( *RES_MIN, max( distance[i] - distance[closest_left.first[i]], distance[n-1-closest_right.first[n-1-i]] - distance[i]) );
+                (*RES_MIN) = min( *RES_MIN, max( distance[i] - distance[closest_left.first[i]], distance[closest_right.first[i]] - distance[i]) );
 
             }
             if( closest_left.second[i] != -1 ){
 
-                (*RES_MIN) = min( *RES_MIN, max( distance[i] - distance[closest_left.second[i]], distance[n-1-closest_right.first[n-1-i]] - distance[i]) );
+                (*RES_MIN) = min( *RES_MIN, max( distance[i] - distance[closest_left.second[i]], distance[closest_right.first[i]] - distance[i]) );
 
             }
-            if( closest_right.second[n-1-i] != -1 ){
+            if( closest_right.second[i] != -1 ){
 
-                (*RES_MIN) = min( *RES_MIN, max( distance[i] - distance[closest_left.first[i]], distance[n-1-closest_right.second[n-1-i]] - distance[i]) );
+                (*RES_MIN) = min( *RES_MIN, max( distance[i] - distance[closest_left.first[i]], distance[closest_right.second[i]] - distance[i]) );
 
             }
         }
@@ -243,7 +255,7 @@ void calculate_minimum( int n, int* network, int *distance, struct pair closest_
 }
 
 int solve_min( int n, int* network, int *distance, int* network_back, int *distance_back ){
-    //2 closest left and 2 closest righr
+    //2 closest left and 2 closest right
     struct pair closest_left, closest_right; 
 
     declare_memory( n, &closest_left );
@@ -251,6 +263,9 @@ int solve_min( int n, int* network, int *distance, int* network_back, int *dista
 
     caterpillar_min( n, network, distance, &closest_left );
     caterpillar_min( n, network_back, distance_back, &closest_right );
+
+    reverse_table( n, &closest_right.first );
+    reverse_table( n, &closest_right.second );
 
     int RES_MIN = 1000000000;//dac tu int_max
 
@@ -264,7 +279,7 @@ int solve_min( int n, int* network, int *distance, int* network_back, int *dista
     return RES_MIN;
 }
 
-void add_possibility_max( struct trio* net, struct trio* index, int motel_network, int motel_index ){//funkcja zachowuje monotoniczność
+void add_possibility_max( struct trio* net, struct trio* index, int motel_network, int motel_index ){
     
     if( (*net).third == -1 && (*net).first != motel_network && (*net).second != motel_network && (*net).third != motel_network ){
 
@@ -287,10 +302,10 @@ void add_possibility_max( struct trio* net, struct trio* index, int motel_networ
 
 void caterpillar_max( int n, int* network, struct pair* furthest ){
 
-    struct trio net;//our candidates
-    struct trio index;//distances of our candidates
+    struct trio net;// our candidates
+    struct trio index;// distances of our candidates
 
-    //we want distance[index.first] R distance[index.second] R distance[index.third], R = (>=)
+    // we want distance[index.first] R distance[index.second] R distance[index.third], R = (>=)
 
     net.second = net.third = -1;
     index.second = index.third = -1;
@@ -312,21 +327,21 @@ void calculate_maximum( int n, int* network, int* distance, struct pair furthest
     
     for( int i = 0 ; i < n ; ++i ){
         
-        if( furthest_left.first[i] != -1 && furthest_right.first[n-1-i] != -1 ){
+        if( furthest_left.first[i] != -1 && furthest_right.first[i] != -1 ){
 
-            if( network[furthest_left.first[i]] != network[n-1-furthest_right.first[n-1-i]] ){
+            if( network[furthest_left.first[i]] != network[furthest_right.first[i]] ){
 
-                (*RES_MAX) = max( *RES_MAX, min( distance[i] - distance[furthest_left.first[i]], distance[n-1-furthest_right.first[n-1-i]] - distance[i]) );
+                (*RES_MAX) = max( *RES_MAX, min( distance[i] - distance[furthest_left.first[i]], distance[furthest_right.first[i]] - distance[i]) );
 
             }
             if( furthest_left.second[i] != -1 ){
 
-                (*RES_MAX) = max( *RES_MAX, min( distance[i] - distance[furthest_left.second[i]], distance[n-1-furthest_right.first[n-1-i]] - distance[i]) );
+                (*RES_MAX) = max( *RES_MAX, min( distance[i] - distance[furthest_left.second[i]], distance[furthest_right.first[i]] - distance[i]) );
 
             }
-            if( furthest_right.second[n-1-i] != -1 ){
+            if( furthest_right.second[i] != -1 ){
 
-                (*RES_MAX) = max( *RES_MAX, min( distance[i] - distance[furthest_left.first[i]], distance[n-1-furthest_right.second[n-1-i]] - distance[i]) );
+                (*RES_MAX) = max( *RES_MAX, min( distance[i] - distance[furthest_left.first[i]], distance[furthest_right.second[i]] - distance[i]) );
 
             }
         }
@@ -342,6 +357,9 @@ int solve_max( int n, int* network, int* distance, int* network_back ){
 
     caterpillar_max( n, network, &furthest_left );
     caterpillar_max( n, network_back, &furthest_right );
+
+    reverse_table( n, &furthest_right.first );
+    reverse_table( n, &furthest_right.second );
 
     int RES_MAX = 0;
     calculate_maximum( n, network, distance, furthest_left, furthest_right, &RES_MAX );
