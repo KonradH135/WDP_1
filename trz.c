@@ -117,17 +117,26 @@ void reverse_table( int n, int** table ){
     int tem, index = 0;
 
     while( index <= n-1-index ){
-
+        
         tem = (*table)[index];
 
-        (*table)[index] = n - 1 - (*table)[n-1-index];
-        (*table)[n-1-index] = n - 1 - tem;
+        (*table)[index] = (*table)[n-1-index];
+        (*table)[n-1-index] = tem;
+
+        if( (*table)[index] != -1 ){
+            (*table)[index] = n-1-(*table)[index];
+        }
+        if( (*table)[n-1-index] != -1 && index != n-1-index ){// prevents reversing the same element two times
+            (*table)[n-1-index] = n-1-(*table)[n-1-index];
+        }
 
         ++index;
     }
 }
 
 void add_possibility_min( struct trio* net, struct trio* index, int motel_network, int motel_index ){
+    // possibility is added honoring .first better than .second better than .third
+    // we ensure that if .second exists then .first exists 
 
     if( (*net).first != motel_network && (*net).second != motel_network && (*net).third != motel_network ){
 
@@ -168,6 +177,8 @@ void add_possibility_min( struct trio* net, struct trio* index, int motel_networ
 }
 
 void update_table( struct trio net, struct trio index, struct pair* table, int motel_network, int motel_index ){
+    // we want two indexes different than motel_index
+    // the best possible: .first better than .second better than .third 
 
     if( net.first == motel_network ){
 
@@ -208,7 +219,7 @@ void caterpillar_min( int n, int* network, int* distance, struct pair* closest )
 
     while( j < n ){// caterpillar
 
-        if( distance[j] == distance[j-1] || i == j ){// add some statement for tail
+        if( distance[j] == distance[j-1] || i == j ){// add some possibility for the tail
             
             add_possibility_min( &net, &index, network[j], j );
 
@@ -230,6 +241,8 @@ void caterpillar_min( int n, int* network, int* distance, struct pair* closest )
 }
 
 void calculate_minimum( int n, int* network, int *distance, struct pair closest_left, struct pair closest_right, int* RES_MIN ){
+    // if closest_left/right exists we match them together and calculate answer
+    // closest_left/right exists if != -1 ( -1 is default value, because index == -1 is impossible )
 
     for( int i = 0 ; i < n ; ++i ){
         
@@ -267,7 +280,7 @@ int solve_min( int n, int* network, int *distance, int* network_back, int *dista
     reverse_table( n, &closest_right.first );
     reverse_table( n, &closest_right.second );
 
-    int RES_MIN = 1000000000;//dac tu int_max
+    int RES_MIN = distance[n-1];// impossibly big value
 
     calculate_minimum( n, network, distance, closest_left, closest_right, &RES_MIN );
 
@@ -280,7 +293,8 @@ int solve_min( int n, int* network, int *distance, int* network_back, int *dista
 }
 
 void add_possibility_max( struct trio* net, struct trio* index, int motel_network, int motel_index ){
-    
+    // possibility is added honoring .first better than .second better than .third
+
     if( (*net).third == -1 && (*net).first != motel_network && (*net).second != motel_network && (*net).third != motel_network ){
 
         if( (*net).second == -1 ){
@@ -300,8 +314,8 @@ void add_possibility_max( struct trio* net, struct trio* index, int motel_networ
     }
 }
 
-void caterpillar_max( int n, int* network, struct pair* furthest ){
-
+void caterpillar_max( int n, int* network, struct pair* furthest ){// it is catterpillar with just a head
+    
     struct trio net;// our candidates
     struct trio index;// distances of our candidates
 
@@ -324,7 +338,9 @@ void caterpillar_max( int n, int* network, struct pair* furthest ){
 }
 
 void calculate_maximum( int n, int* network, int* distance, struct pair furthest_left, struct pair furthest_right, int* RES_MAX ){
-    
+    // if furthest_left/right exists we match them together and calculate answer
+    // furthest_left/right exists if != -1 ( -1 is default value, because index == -1 is impossible )
+
     for( int i = 0 ; i < n ; ++i ){
         
         if( furthest_left.first[i] != -1 && furthest_right.first[i] != -1 ){
@@ -350,6 +366,7 @@ void calculate_maximum( int n, int* network, int* distance, struct pair furthest
 }
 
 int solve_max( int n, int* network, int* distance, int* network_back ){
+    //2 furthest left and 2 furthest right
     struct pair furthest_left, furthest_right;
 
     declare_memory( n, &furthest_left );
@@ -372,14 +389,14 @@ int solve_max( int n, int* network, int* distance, int* network_back ){
     return RES_MAX;
 }
 
-int main(){
+int solve(){
 
     int n;
     int* network, *network_back, * distance, * distance_back;
 
     read_data( &n, &network, &distance, &network_back, &distance_back );
 
-    if(!solution_exists( n, network )){
+    if(!solution_exists( n, network )){// checks if there is a point in calculating
         answer( 0, 0 );
     }
     else{
@@ -397,4 +414,12 @@ int main(){
     free(distance_back);
 
     return 0;
+}
+
+int main() {
+    int t,tem;
+    tem=scanf("%d", &t);
+    ++tem;
+    for (int i = 0; i < t; ++i)
+        solve();
 }
