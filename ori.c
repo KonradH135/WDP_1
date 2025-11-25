@@ -53,8 +53,9 @@ int recursion( double sheet, double x_3, double y_3, struct card* list_of_cards 
         x_2 = list_of_cards[(int)sheet].fourth;
         y_2 = list_of_cards[(int)sheet].fifth;
         double d = (x_2-x_1)*(y_3-y_1)-(y_2-y_1)*(x_3-x_1);
+        double epsilon = 0.000001;
         //printf("jakies d: %lf \n",d);
-        if( d == 0 ){
+        if( d <= epsilon && d >= -epsilon ){
             return recursion( new_sheet, x_3, y_3, list_of_cards );
         }
         if( d < 0 ){
@@ -71,11 +72,12 @@ int recursion( double sheet, double x_3, double y_3, struct card* list_of_cards 
     else{
         if( list_of_cards[(int)sheet].object_type == 'P' ){
             double x_1, x_2, y_1, y_2;
+            double epsilon = 0.000001;
             x_1 = list_of_cards[(int)sheet].first;
             y_1 = list_of_cards[(int)sheet].second;
             x_2 = list_of_cards[(int)sheet].third;
             y_2 = list_of_cards[(int)sheet].fourth;
-            if( x_1 <= x_3 && x_3 <= x_2 && y_1 <= y_3 && y_3 <= y_2 ){
+            if( x_1 <= x_3 + epsilon && x_3 <= x_2 + epsilon && y_1 <= y_3 + epsilon && y_3 <= y_2 + epsilon ){
                 return 1;
             }
             else{
@@ -84,10 +86,11 @@ int recursion( double sheet, double x_3, double y_3, struct card* list_of_cards 
         } 
         else{
             double x_1, y_1, r;
+            double epsilon = 0.000001;
             x_1 = list_of_cards[(int)sheet].first;
             y_1 = list_of_cards[(int)sheet].second;
             r = list_of_cards[(int)sheet].third;
-            if ( (x_3-x_1)*(x_3-x_1)+(y_3-y_1)*(y_3-y_1) <= r*r ){
+            if ( (x_3-x_1)*(x_3-x_1)+(y_3-y_1)*(y_3-y_1) <= r*r + epsilon){
                 return 1;
             }
             else{
@@ -95,6 +98,7 @@ int recursion( double sheet, double x_3, double y_3, struct card* list_of_cards 
             }
         }
     }
+    return 0;
 }
 
 void solve( int q, struct card* list_of_cards ){
@@ -120,4 +124,5 @@ int main(){
     }
     read_data( n, list_of_cards );
     solve(q, list_of_cards );
+    free(list_of_cards);
 }
